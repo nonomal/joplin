@@ -25,7 +25,7 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 	}
 
 	static label() {
-		return `${_('S3')} (Beta)`;
+		return _('S3');
 	}
 
 	static description() {
@@ -33,6 +33,10 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 	}
 
 	async isAuthenticated() {
+		return true;
+	}
+
+	static requiresPassword() {
 		return true;
 	}
 
@@ -52,6 +56,7 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			UseArnRegion: true, // override the request region with the region inferred from requested resource's ARN.
 			forcePathStyle: Setting.value('sync.8.forcePathStyle'), // Older implementations may not support more modern access, so we expose this to allow people the option to toggle.
 			endpoint: Setting.value('sync.8.url'),
+			ignoreTlsErrors: Setting.value('net.ignoreTlsErrors'),
 		};
 	}
 
@@ -83,6 +88,7 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			UseArnRegion: true, // override the request region with the region inferred from requested resource's ARN.
 			forcePathStyle: options.forcePathStyle(),
 			endpoint: options.url(),
+			ignoreTlsErrors: options.ignoreTlsErrors(),
 		};
 
 		const api = new S3Client(apiOptions);
@@ -111,8 +117,8 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 
 					new HeadBucketCommand({
 						Bucket: options.path(),
-					}),(err, response) => {
-						if (err) reject(err);
+					}), (error, response) => {
+						if (error) reject(error);
 						else resolve(response);
 					});
 			});

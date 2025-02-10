@@ -29,6 +29,7 @@ const theme: Theme = {
 	selectedColor2: '#013F74',
 	colorError2: '#ff6c6c',
 	colorWarn2: '#ffcb81',
+	colorWarn3: '#ffcb81',
 
 	// Color scheme "3" is used for the config screens for example/
 	// It's dark text over gray background.
@@ -47,6 +48,7 @@ const theme: Theme = {
 	searchMarkerColor: 'black',
 
 	warningBackgroundColor: '#013F74',
+	destructiveColor: '#F07777',
 
 	tableBackgroundColor: 'rgb(40, 41, 42)',
 	codeBackgroundColor: 'rgb(47, 48, 49)',
@@ -55,6 +57,9 @@ const theme: Theme = {
 
 	codeMirrorTheme: 'material-darker',
 	codeThemeCss: 'atom-one-dark-reasonable.css',
+
+	headerBackgroundColor: '#2D3136',
+	textSelectionColor: '#00AEFF',
 };
 
 export default theme;

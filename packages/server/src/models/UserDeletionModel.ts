@@ -34,6 +34,11 @@ export default class UserDeletionModel extends BaseModel<UserDeletion> {
 		return !!r;
 	}
 
+	public async isDeletedOrBeingDeleted(userId: Uuid) {
+		const r: UserDeletion = await this.db(this.tableName).select(['id', 'start_time']).where('user_id', '=', userId).first();
+		return !!r && !!r.start_time;
+	}
+
 	public async add(userId: Uuid, scheduledTime: number, options: AddOptions = null): Promise<UserDeletion> {
 		options = {
 			...defaultAddOptions(),
@@ -82,6 +87,7 @@ export default class UserDeletionModel extends BaseModel<UserDeletion> {
 		if (item.start_time !== now) throw new Error('Job was already started');
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 	public async end(deletionId: number, success: boolean, error: any) {
 		const now = Date.now();
 
@@ -118,6 +124,12 @@ export default class UserDeletionModel extends BaseModel<UserDeletion> {
 		}, 'UserDeletionModel::autoAdd');
 
 		return userIds;
+	}
+
+	// Remove a user from the deletion queue, before it gets deleted. If it has
+	// already been deleted or if it's being deleted, no action is performed.
+	public async removeFromQueueByUserId(userId: Uuid) {
+		await this.db(this.tableName).where('user_id', '=', userId).andWhere('start_time', '=', 0).delete();
 	}
 
 }

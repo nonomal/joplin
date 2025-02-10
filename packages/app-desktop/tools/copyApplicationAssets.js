@@ -1,6 +1,6 @@
 const { writeFile, copy, mkdirp, remove } = require('fs-extra');
 const glob = require('glob');
-const { resolve } = require('path');
+const { resolve, basename } = require('path');
 const { dirname } = require('@joplin/tools/gulp/utils');
 
 const rootDir = resolve(__dirname, '../../..');
@@ -62,6 +62,7 @@ const withRetry = async (fn) => {
 async function main() {
 	const langSourceDir = resolve(__dirname, '../../../Assets/TinyMCE/langs');
 	const buildLibDir = resolve(__dirname, '../vendor/lib');
+	const buildDir = resolve(__dirname, '../build');
 
 	const dirs = [
 		'tinymce',
@@ -72,20 +73,34 @@ async function main() {
 			src: langSourceDir,
 			dest: `${buildLibDir}/tinymce/langs`,
 		},
+		{
+			src: `${nodeModulesDir}/tesseract.js-core`,
+			dest: `${buildDir}/tesseract.js-core`,
+		},
 	];
 
 	const files = [
 		'@fortawesome/fontawesome-free/css/all.min.css',
-		'react-datetime/css/react-datetime.css',
-		'smalltalk/css/smalltalk.css',
-		'roboto-fontface/css/roboto/roboto-fontface.css',
-		'codemirror/lib/codemirror.css',
-		'codemirror/addon/dialog/dialog.css',
 		'@joeattardi/emoji-button/dist/index.js',
+		'codemirror/addon/dialog/dialog.css',
+		'codemirror/lib/codemirror.css',
 		'mark.js/dist/mark.min.js',
+		'roboto-fontface/css/roboto/roboto-fontface.css',
+		'smalltalk/css/smalltalk.css',
+		'smalltalk/dist/smalltalk.min.js',
+		'smalltalk/img/IDR_CLOSE_DIALOG_H.png',
+		'smalltalk/img/IDR_CLOSE_DIALOG.png',
 		{
 			src: resolve(__dirname, '../../lib/services/plugins/sandboxProxy.js'),
 			dest: `${buildLibDir}/@joplin/lib/services/plugins/sandboxProxy.js`,
+		},
+		{
+			src: `${nodeModulesDir}/pdfjs-dist/build/pdf.worker.min.js`,
+			dest: `${buildDir}/pdf.worker.min.js`,
+		},
+		{
+			src: `${nodeModulesDir}/tesseract.js/dist/worker.min.js`,
+			dest: `${buildDir}/tesseract.js/worker.min.js`,
 		},
 	];
 
@@ -131,11 +146,11 @@ async function main() {
 	}
 
 	const supportedLocales = glob.sync(`${langSourceDir}/*.js`).map(s => {
-		s = s.split('/');
-		s = s[s.length - 1];
-		s = s.split('.');
+		s = basename(s).split('.');
 		return s[0];
 	});
+
+	supportedLocales.sort();
 
 	const content = `module.exports = ${JSON.stringify(supportedLocales, null, 2)}`;
 

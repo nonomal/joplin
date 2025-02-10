@@ -1,4 +1,4 @@
-import Logger from '@joplin/lib/Logger';
+import Logger from '@joplin/utils/Logger';
 import { Pagination } from '../models/utils/pagination';
 import { Day, msleep } from '../utils/time';
 import BaseService from './BaseService';
@@ -12,7 +12,7 @@ export interface DeletionJobOptions {
 
 export default class UserDeletionService extends BaseService {
 
-	protected name_: string = 'UserDeletionService';
+	protected name_ = 'UserDeletionService';
 
 	private async deleteUserData(userId: Uuid, options: DeletionJobOptions) {
 		// While the "UserDeletionInProgress" flag is on, the account is
@@ -71,7 +71,7 @@ export default class UserDeletionService extends BaseService {
 				user,
 				flags,
 			}),
-			userId
+			userId,
 		);
 
 		await this.models.userFlag().add(userId, UserFlagType.UserDeletionInProgress);
@@ -90,8 +90,23 @@ export default class UserDeletionService extends BaseService {
 
 		logger.info('Starting user deletion: ', deletion);
 
+		// Normally, a user that is still enabled should not be processed here,
+		// because it should not have been queued to begin with (or if it was
+		// queued, then enabled, it should have been removed from the queue).
+		// But as a fail safe we have this extra check.
+		//
+		// We also remove the job from the queue so that the service doesn't try
+		// to process it again.
+		const user = await this.models.user().load(deletion.user_id);
+		if (user.enabled) {
+			logger.error(`Trying to delete a user that is still enabled - aborting and removing the user from the queue. Deletion job: ${JSON.stringify(deletion)}`);
+			await this.models.userDeletion().removeFromQueueByUserId(user.id);
+			return;
+		}
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 		let error: any = null;
-		let success: boolean = true;
+		let success = true;
 
 		try {
 			await this.models.userDeletion().start(deletion.id);
@@ -112,11 +127,11 @@ export default class UserDeletionService extends BaseService {
 		const addedUserIds = await this.models.userDeletion().autoAdd(
 			10,
 			this.config.USER_DATA_AUTO_DELETE_AFTER_DAYS * Day,
-			3 * Day,
+			Date.now() + 3 * Day,
 			{
 				processAccount: true,
 				processData: true,
-			}
+			},
 		);
 
 		if (addedUserIds.length) {

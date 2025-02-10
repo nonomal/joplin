@@ -1,11 +1,10 @@
-import Logger from '@joplin/lib/Logger';
+import Logger from '@joplin/utils/Logger';
 import BaseService from './BaseService';
 import Mail = require('nodemailer/lib/mailer');
 import SMTPTransport = require('nodemailer/lib/smtp-transport');
 import { createTransport } from 'nodemailer';
 import { Email, EmailSender } from '../services/database/types';
 import { errorToString } from '../utils/errors';
-import EmailModel from '../models/EmailModel';
 import { markdownBodyToHtml, markdownBodyToPlainText } from './email/utils';
 import { MailerSecurity } from '../env';
 import { senderInfo } from '../models/utils/email';
@@ -14,6 +13,7 @@ const logger = Logger.create('EmailService');
 
 export default class EmailService extends BaseService {
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 	private transport_: any;
 
 	private async transport(): Promise<Mail> {
@@ -58,7 +58,7 @@ export default class EmailService extends BaseService {
 		return f.replace(/[\n\r"<>]/g, '');
 	}
 
-	private formatNameAndEmail(email: string, name: string = ''): string {
+	private formatNameAndEmail(email: string, name = ''): string {
 		if (!email) throw new Error('Email is required');
 		const output: string[] = [];
 		if (name) output.push(`"${this.escapeEmailField(name)}"`);
@@ -110,19 +110,12 @@ export default class EmailService extends BaseService {
 		logger.info(`Maintenance completed in ${Date.now() - startTime}ms`);
 	}
 
-	public async runInBackground() {
+	public checkConfiguration() {
 		if (!this.config.mailer.host || !this.config.mailer.enabled) {
 			this.enabled_ = false;
 			logger.info('Service will be disabled because mailer config is not set or is explicitly disabled');
 			return;
 		}
-
-		EmailModel.eventEmitter.on('queued', () => {
-			logger.info('Email was queued - scheduling maintenance');
-			void this.scheduleMaintenance();
-		});
-
-		await super.runInBackground();
 	}
 
 }
