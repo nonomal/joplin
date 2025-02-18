@@ -1,7 +1,9 @@
 import { URL } from 'url';
 import config from '../config';
 import { Uuid } from '../services/database/types';
+import { ReportType } from '../services/reports/types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 export function setQueryParameters(url: string, query: any): string {
 	if (!query) return url;
 
@@ -38,7 +40,7 @@ export function helpUrl(): string {
 	return `${config().baseUrl}/help`;
 }
 
-export function confirmUrl(userId: Uuid, validationToken: string, autoConfirmEmail: boolean = true): string {
+export function confirmUrl(userId: Uuid, validationToken: string, autoConfirmEmail = true): string {
 	return `${config().baseUrl}/users/${userId}/confirm?token=${validationToken}${autoConfirmEmail ? '' : '&confirm_email=0'}`;
 }
 
@@ -92,4 +94,8 @@ export function adminEmailsUrl() {
 
 export function adminEmailUrl(id: number) {
 	return `${config().adminBaseUrl}/emails/${id}`;
+}
+
+export function adminReportUrl(type: ReportType) {
+	return `${config().adminBaseUrl}/reports/${type}`;
 }

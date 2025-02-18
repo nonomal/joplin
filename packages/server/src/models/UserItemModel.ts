@@ -3,6 +3,10 @@ import BaseModel, { DeleteOptions, LoadOptions, SaveOptions } from './BaseModel'
 import { unique } from '../utils/array';
 import { ErrorNotFound } from '../utils/errors';
 import { Knex } from 'knex';
+import { PerformanceTimer } from '../utils/time';
+import Logger from '@joplin/utils/Logger';
+
+const logger = Logger.create('UserItemModel');
 
 interface DeleteByShare {
 	id: Uuid;
@@ -82,10 +86,10 @@ export default class UserItemModel extends BaseModel<UserItem> {
 			.where('user_items.user_id', '=', userId);
 	}
 
-	public async deleteByUserItem(userId: Uuid, itemId: Uuid): Promise<void> {
+	public async deleteByUserItem(userId: Uuid, itemId: Uuid, options: UserItemDeleteOptions = null): Promise<void> {
 		const userItem = await this.byUserAndItemId(userId, itemId);
 		if (!userItem) throw new ErrorNotFound(`No such user_item: ${userId} / ${itemId}`);
-		await this.deleteBy({ byUserItem: userItem });
+		await this.deleteBy({ ...options, byUserItem: userItem });
 	}
 
 	public async deleteByItemIds(itemIds: Uuid[], options: UserItemDeleteOptions = null): Promise<void> {
@@ -114,14 +118,23 @@ export default class UserItemModel extends BaseModel<UserItem> {
 
 	public async add(userId: Uuid, itemId: Uuid, options: SaveOptions = {}): Promise<void> {
 		const item = await this.models().item().load(itemId, { fields: ['id', 'name'] });
+		if (!item) {
+			throw new ErrorNotFound(`No such item: ${itemId}`);
+		}
 		await this.addMulti(userId, [item], options);
 	}
 
 	public async addMulti(userId: Uuid, itemsQuery: Knex.QueryBuilder | Item[], options: SaveOptions = {}): Promise<void> {
+		const perfTimer = new PerformanceTimer(logger, 'addMulti');
+
+		perfTimer.push('Main');
+
 		const items: Item[] = Array.isArray(itemsQuery) ? itemsQuery : await itemsQuery.whereNotIn('id', this.db('user_items').select('item_id').where('user_id', '=', userId));
 		if (!items.length) return;
 
 		await this.withTransaction(async () => {
+			perfTimer.push(`Processing ${items.length} items`);
+
 			for (const item of items) {
 				if (!('name' in item) || !('id' in item)) throw new Error('item.id and item.name must be set');
 
@@ -141,7 +154,11 @@ export default class UserItemModel extends BaseModel<UserItem> {
 					});
 				}
 			}
+
+			perfTimer.pop();
 		}, 'UserItemModel::addMulti');
+
+		perfTimer.pop();
 	}
 
 	public async save(_userItem: UserItem, _options: SaveOptions = {}): Promise<UserItem> {
@@ -174,6 +191,7 @@ export default class UserItemModel extends BaseModel<UserItem> {
 		} else if (options.byUserItem) {
 			userItems = [options.byUserItem];
 		} else if (options.byUserItemIds) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 			userItems = await this.loadByIds(options.byUserItemIds as any);
 		} else {
 			throw new Error('Invalid options');
@@ -185,6 +203,9 @@ export default class UserItemModel extends BaseModel<UserItem> {
 		await this.withTransaction(async () => {
 			for (const userItem of userItems) {
 				const item = items.find(i => i.id === userItem.item_id);
+
+				// The item may have been deleted between the async calls above
+				if (!item) continue;
 
 				if (options.recordChanges && this.models().item().shouldRecordChange(item.name)) {
 					await this.models().change().save({

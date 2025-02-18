@@ -1,8 +1,8 @@
-import { makeUrl, redirect, SubPath, UrlType } from '../../utils/routeUtils';
+import { redirect, SubPath } from '../../utils/routeUtils';
 import Router from '../../utils/Router';
 import { RouteType } from '../../utils/types';
 import { AppContext } from '../../utils/types';
-import { ErrorBadRequest, ErrorForbidden, ErrorMethodNotAllowed } from '../../utils/errors';
+import { ErrorBadRequest, ErrorForbidden } from '../../utils/errors';
 import defaultView from '../../utils/defaultView';
 import { yesOrNo } from '../../utils/strings';
 import { makeTablePagination, makeTableView, Row, Table } from '../../utils/views/table';
@@ -18,60 +18,61 @@ router.get('admin/user_deletions', async (_path: SubPath, ctx: AppContext) => {
 	const user = ctx.joplin.owner;
 	if (!user.is_admin) throw new ErrorForbidden();
 
-	if (ctx.method === 'GET') {
-		const pagination = makeTablePagination(ctx.query, 'scheduled_time', PaginationOrderDir.ASC);
-		const page = await ctx.joplin.models.userDeletion().allPaginated(pagination);
-		const users = await ctx.joplin.models.user().loadByIds(page.items.map(d => d.user_id), { fields: ['id', 'email'] });
+	const pagination = makeTablePagination(ctx.query, 'scheduled_time', PaginationOrderDir.DESC);
+	const page = await ctx.joplin.models.userDeletion().allPaginated(pagination);
+	const users = await ctx.joplin.models.user().loadByIds(page.items.map(d => d.user_id), { fields: ['id', 'email'] });
 
-		const table: Table = {
-			baseUrl: adminUserDeletionsUrl(),
-			requestQuery: ctx.query,
-			pageCount: page.page_count,
-			pagination,
-			headers: [
-				{
-					name: 'select',
-					label: '',
-					canSort: false,
-				},
-				{
-					name: 'email',
-					label: 'Email',
-					stretch: true,
-				},
-				{
-					name: 'process_data',
-					label: 'Data?',
-				},
-				{
-					name: 'process_account',
-					label: 'Account?',
-				},
-				{
-					name: 'scheduled_time',
-					label: 'Scheduled',
-				},
-				{
-					name: 'start_time',
-					label: 'Start',
-				},
-				{
-					name: 'end_time',
-					label: 'End',
-				},
-				{
-					name: 'success',
-					label: 'Success?',
-				},
-				{
-					name: 'error',
-					label: 'Error',
-				},
-			],
-			rows: page.items.map(d => {
-				const isDone = d.end_time && d.success;
+	const table: Table = {
+		baseUrl: adminUserDeletionsUrl(),
+		requestQuery: ctx.query,
+		pageCount: page.page_count,
+		pagination,
+		headers: [
+			{
+				name: 'select',
+				label: '',
+				canSort: false,
+			},
+			{
+				name: 'email',
+				label: 'Email',
+				stretch: true,
+				canSort: false,
+			},
+			{
+				name: 'process_data',
+				label: 'Data?',
+			},
+			{
+				name: 'process_account',
+				label: 'Account?',
+			},
+			{
+				name: 'scheduled_time',
+				label: 'Scheduled',
+			},
+			{
+				name: 'start_time',
+				label: 'Start',
+			},
+			{
+				name: 'end_time',
+				label: 'End',
+			},
+			{
+				name: 'success',
+				label: 'Success?',
+			},
+			{
+				name: 'error',
+				label: 'Error',
+			},
+		],
+		rows: page.items.map(d => {
+			const isDone = d.end_time && d.success;
 
-				const row: Row = [
+			const row: Row = {
+				items: [
 					{
 						value: `checkbox_${d.id}`,
 						checkbox: true,
@@ -102,24 +103,22 @@ router.get('admin/user_deletions', async (_path: SubPath, ctx: AppContext) => {
 					{
 						value: d.error,
 					},
-				];
+				],
+			};
 
-				return row;
-			}),
-		};
+			return row;
+		}),
+	};
 
-		const view = defaultView('admin/user_deletions', 'User deletions');
-		view.content = {
-			userDeletionTable: makeTableView(table),
-			postUrl: makeUrl(UrlType.UserDeletions),
-			csrfTag: await createCsrfTag(ctx),
-		};
-		view.cssFiles = ['index/user_deletions'];
+	const view = defaultView('admin/user_deletions', 'User deletions');
+	view.content = {
+		userDeletionTable: makeTableView(table),
+		postUrl: adminUserDeletionsUrl(),
+		csrfTag: await createCsrfTag(ctx),
+	};
+	view.cssFiles = ['index/user_deletions'];
 
-		return view;
-	}
-
-	throw new ErrorMethodNotAllowed();
+	return view;
 });
 
 router.post('admin/user_deletions', async (_path: SubPath, ctx: AppContext) => {
@@ -142,7 +141,7 @@ router.post('admin/user_deletions', async (_path: SubPath, ctx: AppContext) => {
 		throw new ErrorBadRequest('Invalid action');
 	}
 
-	return redirect(ctx, makeUrl(UrlType.UserDeletions));
+	return redirect(ctx, adminUserDeletionsUrl());
 });
 
 export default router;

@@ -15,7 +15,8 @@ export default class BackupItemModel extends BaseModel<BackupItem> {
 		return false;
 	}
 
-	public async add(type: BackupItemType, key: string, content: any, userId: string = ''): Promise<BackupItem> {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
+	public async add(type: BackupItemType, key: string, content: any, userId = ''): Promise<BackupItem> {
 		const item: BackupItem = {
 			user_id: userId,
 			key,

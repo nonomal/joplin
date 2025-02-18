@@ -55,6 +55,7 @@ function dbOffset(pagination: Pagination): number {
 	return pagination.limit * (pagination.page - 1);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 export function requestPaginationOrder(query: any, defaultOrderField: string = null, defaultOrderDir: PaginationOrderDir = null): PaginationOrder[] {
 	if (defaultOrderField === null) defaultOrderField = defaultOrderField_;
 	if (defaultOrderDir === null) defaultOrderDir = defaultOrderDir_;
@@ -92,6 +93,7 @@ function processCursor(pagination: Pagination): Pagination {
 	return pagination as Pagination;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 export function requestPagination(query: any): Pagination {
 	if (!query) return defaultPagination();
 
@@ -141,6 +143,7 @@ export interface PageLink {
 	url?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 export function filterPaginationQueryParams(query: any): PaginationQueryParams {
 	if (!query) return {};
 
@@ -168,7 +171,7 @@ export function createPaginationLinks(page: number, pageCount: number, urlTempla
 		firstPages.push({ page: p });
 	}
 
-	if (firstPages.length && (output[0].page - firstPages[firstPages.length - 1].page) > 1) {
+	if (firstPages.length && output.length && (output[0].page - firstPages[firstPages.length - 1].page) > 1) {
 		firstPages.push({ isEllipsis: true });
 	}
 
@@ -214,7 +217,8 @@ export function createPaginationLinks(page: number, pageCount: number, urlTempla
 // }
 
 
-export async function paginateDbQuery(query: Knex.QueryBuilder, pagination: Pagination, mainTable: string = ''): Promise<PaginatedResults<any>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
+export async function paginateDbQuery(query: Knex.QueryBuilder, pagination: Pagination, mainTable = ''): Promise<PaginatedResults<any>> {
 	pagination = {
 		...defaultPagination(),
 		...pagination,
@@ -222,6 +226,7 @@ export async function paginateDbQuery(query: Knex.QueryBuilder, pagination: Pagi
 
 	pagination = processCursor(pagination);
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
 	const orderSql: any[] = pagination.order.map(o => {
 		return {
 			column: (mainTable ? `${mainTable}.` : '') + o.by,
